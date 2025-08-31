@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -845,6 +845,44 @@
             animation: fadeIn 0.5s;
         }
         
+        /* Error message styling */
+        .error-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: fadeIn 0.5s;
+        }
+        
+        /* Loading spinner */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         /* Interactive background */
         .interactive-bg {
             position: fixed;
@@ -911,7 +949,6 @@
             
             <!-- Call to action buttons -->
             <div class="cta-container">
-                
                 <a class="cta-btn" data-section="contact">Contact</a>
             </div>
             
@@ -1338,18 +1375,18 @@
                     <!-- Message form card -->
                     <div class="info-card">
                         <h3><i class="fas fa-paper-plane"></i> Send Message</h3>
-                        <form id="contactForm">
+                        <form id="contactForm" action="https://formspree.io/f/xjkergyp" method="POST">
                             <div class="form-group">
                                 <label for="name">Your Name</label>
-                                <input type="text" id="name" required>
+                                <input type="text" id="name" name="name" required>
                             </div>
                             <div class="form-group">
                                 <label for="email">Your Email</label>
-                                <input type="email" id="email" required>
+                                <input type="email" id="email" name="email" required>
                             </div>
                             <div class="form-group">
                                 <label for="message">Message</label>
-                                <textarea id="message" required></textarea>
+                                <textarea id="message" name="message" required></textarea>
                             </div>
                             <button type="submit" class="submit-btn">Send Message</button>
                         </form>
@@ -1362,6 +1399,11 @@
         <footer>
             <p>&copy; 2025 S. M. Arfatur Rahman. All rights reserved.</p>
         </footer>
+    </div>
+    
+    <!-- Loading spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
     </div>
     
     <script>
@@ -1394,6 +1436,39 @@
             
             // Scroll to top of page
             window.scrollTo(0, 0);
+        }
+        
+        // Function to show notification message
+        function showMessage(message, isError = false) {
+            // Remove any existing messages
+            const existingMessages = document.querySelectorAll('.success-message, .error-message');
+            existingMessages.forEach(msg => msg.remove());
+            
+            // Create new message
+            const messageElement = document.createElement('div');
+            messageElement.className = isError ? 'error-message' : 'success-message';
+            messageElement.textContent = message;
+            
+            // Add to page
+            document.body.appendChild(messageElement);
+            
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                messageElement.style.animation = 'fadeOut 0.5s';
+                setTimeout(() => {
+                    if (messageElement.parentNode) {
+                        messageElement.parentNode.removeChild(messageElement);
+                    }
+                }, 500);
+            }, 5000);
+        }
+        
+        // Function to show/hide loading spinner
+        function toggleLoading(show) {
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.style.display = show ? 'block' : 'none';
+            }
         }
         
         // Add event listeners to all navigation links and CTA buttons
@@ -1432,25 +1507,50 @@
                     const message = document.getElementById('message').value;
                     
                     // Simple validation
-                    if (name && email && message) {
+                    if (!name || !email || !message) {
+                        showMessage('Please fill in all fields', true);
+                        return;
+                    }
+                    
+                    // Show loading spinner
+                    toggleLoading(true);
+                    
+                    // Get form action URL
+                    const formAction = this.getAttribute('action');
+                    
+                    // Submit form using fetch
+                    fetch(formAction, {
+                        method: 'POST',
+                        body: new FormData(this),
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Network response was not ok');
+                        }
+                    })
+                    .then(data => {
+                        // Hide loading spinner
+                        toggleLoading(false);
+                        
                         // Show success message
-                        const successMessage = document.createElement('div');
-                        successMessage.className = 'success-message';
-                        successMessage.textContent = `Thank you, ${name}! Your message has been sent successfully.`;
-                        
-                        document.body.appendChild(successMessage);
-                        
-                        // Remove message after 3 seconds
-                        setTimeout(() => {
-                            successMessage.style.animation = 'fadeOut 0.5s';
-                            setTimeout(() => {
-                                document.body.removeChild(successMessage);
-                            }, 500);
-                        }, 3000);
+                        showMessage(`Thank you, ${name}! Your message has been sent successfully.`);
                         
                         // Reset form
                         this.reset();
-                    }
+                    })
+                    .catch(error => {
+                        // Hide loading spinner
+                        toggleLoading(false);
+                        
+                        // Show error message
+                        showMessage('There was an error sending your message. Please try again later.', true);
+                        console.error('Form submission error:', error);
+                    });
                 });
             }
             
