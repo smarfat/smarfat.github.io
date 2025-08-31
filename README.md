@@ -1309,7 +1309,7 @@
                         </div>
                         <div class="contact-item">
                             <div class="contact-icon"><i class="fas fa-id-card"></i></div>
-                            <div class="contact-text">NID: 4656245877</div>
+                            <div class="contact-text">NID: 6545245877</div>
                         </div>
                     </div>
                     
